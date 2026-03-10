@@ -45,11 +45,11 @@ export default function HomeSection({
               <div className="text-gray-700 space-y-2">
                 <p className="flex items-start gap-2">
                   <span className="font-bold text-indigo-600">1.</span>
-                  <span><strong>Select a module</strong> - Choose "Auto-detect" to let us figure out your file type, or pick a specific format module.</span>
+                  <span><strong>Select a module</strong> - Choose &ldquo;Auto-detect&rdquo; to let us figure out your file type, or pick a specific format module.</span>
                 </p>
                 <p className="flex items-start gap-2">
                   <span className="font-bold text-indigo-600">2.</span>
-                  <span><strong>Upload your file</strong> - Drag & drop or click to browse.</span>
+                  <span><strong>Upload your file</strong> - Drag &amp; drop or click to browse.</span>
                 </p>
                 <p className="flex items-start gap-2">
                   <span className="font-bold text-indigo-600">3.</span>
