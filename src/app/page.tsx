@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Rusha from "rusha";
+import { FaHome, FaChartBar, FaInfoCircle } from "react-icons/fa";
+import HomeSection from "@/components/HomeSection";
+import AnalyseSection from "@/components/AnalyseSection";
+import AboutSection from "@/components/AboutSection";
 
 declare global {
   interface Window {
@@ -9,8 +14,6 @@ declare global {
     };
   }
 }
-import Image from "next/image";
-import Rusha from "rusha"; // Import Rusha library
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState("Home");
@@ -19,6 +22,8 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedModule, setSelectedModule] = useState("AIFF-hul");
   const [apiBaseUrl, setApiBaseUrl] = useState("https://jhove-rs.openpreservation.org"); // Default value
+  const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
 
   useEffect(() => {
@@ -58,7 +63,6 @@ export default function Home() {
   };
 
   const sendToApi = async (file: File, module: string) => {
-    //const apiBaseUrl = window.env?.API_BASE_URL || "https://jhove-rs.openpreservation.org/"; // Fallback to default
     const formData = new FormData();
     formData.append("file", file);
     formData.append("module", module);
@@ -67,16 +71,21 @@ export default function Home() {
       const response = await fetch(`${apiBaseUrl}/api/jhove/validate`, {
         method: "POST",
         body: formData,
+        mode: "cors",
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`API error (${response.status}): ${errorText}`);
       }
 
       const result = await response.json();
       return result;
     } catch (error) {
       console.error("Error sending data to API:", error);
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error("Network error: Unable to connect to JHOVE API. Please check your internet connection.");
+      }
       throw error;
     }
   };
@@ -102,7 +111,9 @@ export default function Home() {
   };
 
   const processFile = async (file: File) => {
-    //const filePath = file.path; // Electron provides the file path
+    setIsProcessing(true);
+    setError(null);
+    
     try {
       const checksum = await calculateChecksum(file);
       const apiResult = await sendToApi(file, selectedModule);
@@ -115,13 +126,18 @@ export default function Home() {
         size: file.size,
         type: file.type,
         checksum: checksum,
-        module: selectedModule, // Include the selected module        
-        processedResult: processedResult, // Include additional data from the API response
-        rawApiOutput: apiResult, // Include raw API output
+        module: selectedModule,
+        processedResult: processedResult,
+        rawApiOutput: apiResult,
       });
       setActiveSection("Analyse");
     } catch (error) {
       console.error("Error processing file:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to process file. Please try again.";
+      setError(errorMessage);
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -154,199 +170,68 @@ export default function Home() {
     switch (activeSection) {
       case "Home":
         return (
-          <div
-            className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]"
-          >
-            <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-              <div className="mt-4">
-                <p className="text-lg font-medium">First, please select the module:</p>
-                <label htmlFor="module" className="block text-sm font-medium text-gray-700 mt-2">
-                  Select Module:
-                </label>
-                <select
-                  id="module"
-                  name="module"
-                  className="custom-select mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  value={selectedModule}
-                  onChange={handleModuleChange}
-                >
-                  <option value="AIFF-hul">AIFF-hul</option>
-                  <option value="ASCII-hul">ASCII-hul</option>
-                  <option value="BYTESTREAM">BYTESTREAM</option>
-                  <option value="EPUB-ptc">EPUB-ptc</option>
-                  <option value="GIF-hul">GIF-hul</option>
-                  <option value="GZIP-kb">GZIP-kb</option>
-                  <option value="HTML-hul">HTML-hul</option>
-                  <option value="JPEG-hul">JPEG-hul</option>
-                  <option value="JPEG2000-hul">JPEG2000-hul</option>
-                  <option value="PDF-hul">PDF-hul</option>
-                  <option value="PNG-gdm">PNG-gdm</option>
-                  <option value="TIFF-hul">TIFF-hul</option>
-                  <option value="UTF8-hul">UTF8-hul</option>
-                  <option value="WARC-kb">WARC-kb</option>
-                  <option value="WAVE-hul">WAVE-hul</option>
-                  <option value="XML-hul">XML-hul</option>
-                </select>
-              </div>
-              <div>
-              <p className="text-lg font-medium">Next, please Choose a file or drop one here:</p>
-              </div>
-              <div
-                className={`border-2 border-dashed border-gray-400 p-8 rounded-lg text-center transition-colors ${
-                  isDragging ? "bg-green-200" : ""
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleFileDrop}
-              >
-                <p className="text-lg font-medium">Please add your file:</p>
-                <input
-                  type="file"
-                  className="hidden"
-                  id="file-upload"
-                  onChange={handleFileSelect}
-                />
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer text-blue-500 underline"
-                >
-                  Click to upload
-                </label>
-              </div>
-              <Image
-                className="dark:invert"
-                src="/next.svg"
-                alt="Next.js logo"
-                width={180}
-                height={38}
-                priority
-              />
-            
-            </main>
-         
-          </div>
+          <HomeSection
+            selectedModule={selectedModule}
+            isDragging={isDragging}
+            isProcessing={isProcessing}
+            error={error}
+            onModuleChange={handleModuleChange}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleFileDrop}
+            onFileSelect={handleFileSelect}
+          />
         );
       case "Analyse":
-        return (
-          <div className="p-8">
-            <h1 className="text-2xl font-bold mb-4">Validation Result</h1>
-            {fileInfo ? (
-              <table className="table-auto border-collapse border border-gray-300 w-full text-left">
-                <thead>
-                  <tr>
-                    <th className="border border-gray-300 px-4 py-2 font-medium">Property</th>
-                    <th className="border border-gray-300 px-4 py-2 font-medium">Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Name</td>
-                    <td className="border border-gray-300 px-4 py-2">{fileInfo.name}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Size</td>
-                    <td className="border border-gray-300 px-4 py-2">{fileInfo.size} bytes</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Type</td>
-                    <td className="border border-gray-300 px-4 py-2">{fileInfo.type}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Checksum</td>
-                    <td className="border border-gray-300 px-4 py-2">{fileInfo.checksum}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Module</td>
-                    <td className="border border-gray-300 px-4 py-2">{fileInfo.module}</td>
-                  </tr>
-                  <tr
-                    className={`${
-                      fileInfo.processedResult?.valid === "Yes" ? "bg-green-600 text-white" : "bg-red-600 text-white"
-                    }`}
-                  >
-                    <td className="border border-gray-300 px-4 py-2">Valid</td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {String(fileInfo.processedResult?.valid)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">MIME Type</td>
-                    <td className="border border-gray-300 px-4 py-2">{String(fileInfo.processedResult?.mimeType || "Unknown")}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Format</td>
-                    <td className="border border-gray-300 px-4 py-2">{String(fileInfo.processedResult?.format)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Size</td>
-                    <td className="border border-gray-300 px-4 py-2">{String(fileInfo.processedResult?.size)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Well-Formed</td>
-                    <td className="border border-gray-300 px-4 py-2">{String(fileInfo.processedResult?.wellFormed)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Validation Message</td>
-                    <td className="border border-gray-300 px-4 py-2">{String(fileInfo.processedResult?.validMessage)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Well-Formed Message</td>
-                    <td className="border border-gray-300 px-4 py-2">{String(fileInfo.processedResult?.wellFormedMessage)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-2">Messages</td>
-                    <td className="border border-gray-300 px-4 py-2">{String(fileInfo.processedResult?.messages)}</td>
-                  </tr>
-                  {fileInfo.rawApiOutput && (
-                    <tr>
-                      <td className="border border-gray-300 px-4 py-2">Raw API Output</td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        <pre className="whitespace-pre-wrap text-sm">
-                          {JSON.stringify(fileInfo.rawApiOutput, null, 2)}
-                        </pre>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            ) : (
-              <p>No file information available.</p>
-            )}
-          </div>
-        );
+        return <AnalyseSection fileInfo={fileInfo} />;
       case "About":
-        return <p>Learn more about this application in the About section.</p>;
+        return <AboutSection />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="flex min-h-screen">
-      <nav className="menu">
-        <div
-          className={`menu-item ${activeSection === "Home" ? "bg-opf-purple" : ""}`}
-          onClick={() => setActiveSection("Home")}
-        >
-          <span>🏠</span> <span>Home</span>
+    <div className="flex flex-col h-screen overflow-hidden">
+      {/* Top Menu Bar */}
+      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl font-bold">JHOVE</div>
+            <div className="text-sm opacity-90 hidden sm:block">
+              Format Validation & Characterization
+            </div>
+          </div>
         </div>
-        <div
-          className={`menu-item ${activeSection === "Analyse" ? "bg-opf-purple" : ""}`}
-          onClick={() => setActiveSection("Analyse")}
-        >
-          <span>📊</span> <span>Analyse</span>
-        </div>
-        <div
-          className={`menu-item ${activeSection === "About" ? "bg-opf-purple" : ""}`}
-          onClick={() => setActiveSection("About")}
-        >
-          <span>ℹ️</span> <span>About</span>
-        </div>
-      </nav>
-      <main className="main-content">{renderContent()}</main>
+      </header>
+      
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        <nav className="menu">
+          <div
+            className={`menu-item ${activeSection === "Home" ? "bg-opf-purple" : ""}`}
+            onClick={() => setActiveSection("Home")}
+          >
+            <FaHome className="text-xl" /> <span>Home</span>
+          </div>
+          <div
+            className={`menu-item ${activeSection === "Analyse" ? "bg-opf-purple" : ""}`}
+            onClick={() => setActiveSection("Analyse")}
+          >
+            <FaChartBar className="text-xl" /> <span>Analyse</span>
+          </div>
+          <div
+            className={`menu-item ${activeSection === "About" ? "bg-opf-purple" : ""}`}
+            onClick={() => setActiveSection("About")}
+          >
+            <FaInfoCircle className="text-xl" /> <span>About</span>
+          </div>
+        </nav>
+        <main className="main-content overflow-y-auto">{renderContent()}</main>
+      </div>
     </div>
   );
 }
