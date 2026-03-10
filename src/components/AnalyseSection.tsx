@@ -13,7 +13,8 @@ import {
   FaExclamationTriangle,
   FaEye,
   FaEyeSlash,
-  FaCog
+  FaCog,
+  FaExternalLinkAlt
 } from "react-icons/fa";
 
 interface ApiResult {
@@ -80,6 +81,16 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const getWikiLink = (messageId: string, module: string) => {
+    // Extract the module name from formats like "PDF-hul" -> "PDF-hul"
+    const moduleName = module || '';
+    // Remove the "-hul" or other suffixes for the wiki page name
+    const wikiModule = moduleName.replace(/-hul|-gdm|-ptc|-kb/gi, '-hul');
+    // Convert message ID to lowercase anchor format: PDF-HUL-140 -> pdf-hul-140
+    const anchor = messageId.toLowerCase();
+    return `https://github.com/openpreserve/jhove/wiki/${wikiModule}-Messages#${anchor}`;
   };
 
   const formatBytes = (bytes: number) => {
@@ -332,7 +343,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
           </div>
 
           {/* Messages */}
-          {fileInfo.processedResult?.messages && fileInfo.processedResult.messages !== "None" && (
+          {fileInfo.rawApiOutput?.messages && fileInfo.rawApiOutput.messages.length > 0 && (
             <div className="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
               <button
                 onClick={() => toggleSection('messages')}
@@ -340,16 +351,72 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
               >
                 <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                   <FaExclamationTriangle className="text-yellow-600" /> Validation Messages
+                  <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                    {fileInfo.rawApiOutput.messages.length}
+                  </span>
                 </h3>
                 {expandedSections.messages ? <FaChevronUp /> : <FaChevronDown />}
               </button>
               {expandedSections.messages && (
-                <div className="p-5 pt-0 border-t">
-                  <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-                    <div className="text-sm text-gray-800 whitespace-pre-wrap">
-                      {String(fileInfo.processedResult?.messages)}
-                    </div>
-                  </div>
+                <div className="p-5 pt-0 border-t space-y-3">
+                  {fileInfo.rawApiOutput.messages.map((msg: any, index: number) => {
+                    const messageId = msg.id || '';
+                    const prefix = msg.prefix || 'Info';
+                    const message = msg.message || '';
+                    const wikiLink = messageId ? getWikiLink(messageId, fileInfo.module || '') : null;
+                    
+                    // Determine color based on prefix
+                    const colorClass = prefix === 'Error' 
+                      ? 'border-red-500 bg-red-50' 
+                      : prefix === 'Warning'
+                      ? 'border-yellow-500 bg-yellow-50'
+                      : 'border-blue-500 bg-blue-50';
+                    
+                    const textColor = prefix === 'Error'
+                      ? 'text-red-800'
+                      : prefix === 'Warning'
+                      ? 'text-yellow-800'
+                      : 'text-blue-800';
+
+                    return (
+                      <div key={index} className={`${colorClass} border-l-4 p-4 rounded`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`font-semibold ${textColor}`}>
+                                {prefix}
+                              </span>
+                              {messageId && (
+                                <span className={`text-xs ${textColor} bg-white px-2 py-1 rounded font-mono`}>
+                                  {messageId}
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-sm ${textColor}`}>
+                              {message}
+                            </p>
+                            {msg.subMessage && (
+                              <p className={`text-xs ${textColor} mt-2 italic`}>
+                                {msg.subMessage}
+                              </p>
+                            )}
+                          </div>
+                          {wikiLink && (
+                            <a
+                              href={wikiLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-1 text-xs ${textColor} hover:underline whitespace-nowrap`}
+                              title="View documentation"
+                            >
+                              <FaExternalLinkAlt className="text-xs" />
+                              Wiki
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
