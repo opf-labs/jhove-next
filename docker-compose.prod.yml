@@ -1,23 +1,18 @@
+# Production Docker Compose Configuration
 version: "3.8"
 
 services:
-  # Next.js Frontend Application
+  # Next.js Frontend Application (Production)
   jhove-frontend:
     container_name: jhove-next-app
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - API_BASE_URL=http://jhove-api:8080
-    volumes:
-      # Mount source code for hot reload in development
-      # Comment these out for production
-      - ./src:/app/src
-      - ./public:/app/public
-      - ./package.json:/app/package.json
     depends_on:
       - jhove-api
     restart: unless-stopped
