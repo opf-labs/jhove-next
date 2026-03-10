@@ -20,10 +20,11 @@ export default function Home() {
   type AdditionalData = Record<string, unknown>; // Define a specific type for additionalData
   const [fileInfo, setFileInfo] = useState<{ name: string; size: number; type: string; checksum?: string; processedResult?: AdditionalData; rawApiOutput?: ApiResult; module?: string } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedModule, setSelectedModule] = useState("AIFF-hul");
+  const [selectedModule, setSelectedModule] = useState("AUTO");
   const [apiBaseUrl, setApiBaseUrl] = useState("https://jhove-rs.openpreservation.org"); // Default value
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastUploadedFile, setLastUploadedFile] = useState<File | null>(null);
 
 
   useEffect(() => {
@@ -31,6 +32,86 @@ export default function Home() {
       setApiBaseUrl(window.env.API_BASE_URL);
     }
   }, []);
+
+  const detectModuleFromFile = (file: File): string => {
+    // Get file extension
+    const fileName = file.name.toLowerCase();
+    const extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+    const mimeType = file.type.toLowerCase();
+
+    // Map extensions and MIME types to JHOVE modules
+    const moduleMap: { [key: string]: string } = {
+      // Images
+      'jpg': 'JPEG-hul',
+      'jpeg': 'JPEG-hul',
+      'jp2': 'JPEG2000-hul',
+      'jpx': 'JPEG2000-hul',
+      'png': 'PNG-gdm',
+      'gif': 'GIF-hul',
+      'tif': 'TIFF-hul',
+      'tiff': 'TIFF-hul',
+      
+      // Documents
+      'pdf': 'PDF-hul',
+      'html': 'HTML-hul',
+      'htm': 'HTML-hul',
+      'xml': 'XML-hul',
+      'epub': 'EPUB-ptc',
+      
+      // Audio
+      'wav': 'WAVE-hul',
+      'wave': 'WAVE-hul',
+      'aif': 'AIFF-hul',
+      'aiff': 'AIFF-hul',
+      
+      // Archives
+      'gz': 'GZIP-kb',
+      'gzip': 'GZIP-kb',
+      'warc': 'WARC-kb',
+      
+      // Text
+      'txt': 'UTF8-hul',
+      'text': 'ASCII-hul',
+      'asc': 'ASCII-hul',
+    };
+
+    // Try extension first
+    if (moduleMap[extension]) {
+      console.log(`Auto-detected module from extension .${extension}: ${moduleMap[extension]}`);
+      return moduleMap[extension];
+    }
+
+    // Try MIME type mapping
+    const mimeMap: { [key: string]: string } = {
+      'image/jpeg': 'JPEG-hul',
+      'image/jp2': 'JPEG2000-hul',
+      'image/png': 'PNG-gdm',
+      'image/gif': 'GIF-hul',
+      'image/tiff': 'TIFF-hul',
+      'application/pdf': 'PDF-hul',
+      'text/html': 'HTML-hul',
+      'application/xhtml+xml': 'HTML-hul',
+      'text/xml': 'XML-hul',
+      'application/xml': 'XML-hul',
+      'application/epub+zip': 'EPUB-ptc',
+      'audio/wav': 'WAVE-hul',
+      'audio/x-wav': 'WAVE-hul',
+      'audio/aiff': 'AIFF-hul',
+      'audio/x-aiff': 'AIFF-hul',
+      'application/gzip': 'GZIP-kb',
+      'application/warc': 'WARC-kb',
+      'text/plain': 'UTF8-hul',
+    };
+
+    if (mimeType && mimeMap[mimeType]) {
+      console.log(`Auto-detected module from MIME type ${mimeType}: ${mimeMap[mimeType]}`);
+      return mimeMap[mimeType];
+    }
+
+    // Fallback to BYTESTREAM
+    console.log('Could not auto-detect specific module, using BYTESTREAM');
+    return 'BYTESTREAM';
+  };
 
   const calculateChecksum = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -110,13 +191,19 @@ export default function Home() {
     setSelectedModule(event.target.value);
   };
 
-  const processFile = async (file: File) => {
+  const processFile = async (file: File, moduleOverride?: string) => {
     setIsProcessing(true);
     setError(null);
+    let moduleToUse = moduleOverride || selectedModule;
+    
+    // If AUTO is selected, detect the module from the file
+    if (moduleToUse === "AUTO") {
+      moduleToUse = detectModuleFromFile(file);
+    }
     
     try {
       const checksum = await calculateChecksum(file);
-      const apiResult = await sendToApi(file, selectedModule);
+      const apiResult = await sendToApi(file, moduleToUse);
       const processedResult = processApiResult(apiResult);
 
       console.log("API Result:", apiResult);
@@ -126,10 +213,11 @@ export default function Home() {
         size: file.size,
         type: file.type,
         checksum: checksum,
-        module: selectedModule,
+        module: moduleToUse,
         processedResult: processedResult,
         rawApiOutput: apiResult,
       });
+      setLastUploadedFile(file);
       setActiveSection("Analyse");
     } catch (error) {
       console.error("Error processing file:", error);
@@ -186,7 +274,39 @@ export default function Home() {
           />
         );
       case "Analyse":
-        return <AnalyseSection fileInfo={fileInfo} />;
+        return (
+          <AnalyseSection 
+            fileInfo={fileInfo} 
+            onRescan={(newModule) => {
+              if (lastUploadedFile) {
+                setSelectedModule(newModule);
+                processFile(lastUploadedFile, newModule);
+              } else {
+                alert("File no longer available. Please re-upload the file from the Home tab.");
+              }
+            }}
+            availableModules={[
+              "AUTO",
+              "BYTESTREAM",
+              "AIFF-hul",
+              "ASCII-hul",
+              "EPUB-ptc",
+              "GIF-hul",
+              "GZIP-kb",
+              "HTML-hul",
+              "JPEG-hul",
+              "JPEG2000-hul",
+              "PDF-hul",
+              "PNG-gdm",
+              "TIFF-hul",
+              "UTF8-hul",
+              "WARC-kb",
+              "WAVE-hul",
+              "XML-hul"
+            ]}
+            currentModule={fileInfo?.module || selectedModule}
+          />
+        );
       case "About":
         return <AboutSection />;
       default:

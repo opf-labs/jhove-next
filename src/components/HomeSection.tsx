@@ -38,6 +38,8 @@ export default function HomeSection({
             value={selectedModule}
             onChange={onModuleChange}
           >
+            <option value="AUTO">🔍 Auto-detect</option>
+            <option value="BYTESTREAM">BYTESTREAM (Generic)</option>
             <option value="AIFF-hul">AIFF-hul</option>
             <option value="ASCII-hul">ASCII-hul</option>
             <option value="BYTESTREAM">BYTESTREAM</option>
