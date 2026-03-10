@@ -16,6 +16,13 @@ services:
     depends_on:
       - jhove-api
     restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
     networks:
       - jhove-network
 
