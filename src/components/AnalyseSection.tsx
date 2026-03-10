@@ -195,7 +195,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
               </div>
               <div className="text-right">
                 <div className="text-sm opacity-90">Format</div>
-                <div className="text-2xl font-semibold">{fileInfo.processedResult?.format || "Unknown"}</div>
+                <div className="text-2xl font-semibold">{String(fileInfo.processedResult?.format || "Unknown")}</div>
               </div>
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                 <FaFile className="text-2xl text-blue-500" />
                 <div>
                   <div className="text-xs text-gray-500 uppercase font-semibold">File Type</div>
-                  <div className="text-lg font-bold text-gray-800">{fileInfo.processedResult?.mimeType || fileInfo.type}</div>
+                  <div className="text-lg font-bold text-gray-800">{String(fileInfo.processedResult?.mimeType || fileInfo.type)}</div>
                 </div>
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <div className="text-sm text-gray-500 mb-1">MIME Type</div>
-                    <div className="font-medium text-gray-800">{fileInfo.processedResult?.mimeType || "Unknown"}</div>
+                    <div className="font-medium text-gray-800">{String(fileInfo.processedResult?.mimeType || "Unknown")}</div>
                   </div>
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                       </div>
                     </div>
                     <div className="text-sm text-gray-700 mt-2">
-                      {fileInfo.processedResult?.validMessage || "N/A"}
+                      {String(fileInfo.processedResult?.validMessage || "N/A")}
                     </div>
                   </div>
                   <div className={`p-4 rounded-lg ${isWellFormed ? 'bg-green-50' : 'bg-yellow-50'}`}>
@@ -334,7 +334,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                       </div>
                     </div>
                     <div className="text-sm text-gray-700 mt-2">
-                      {fileInfo.processedResult?.wellFormedMessage || "N/A"}
+                      {String(fileInfo.processedResult?.wellFormedMessage || "N/A")}
                     </div>
                   </div>
                 </div>
@@ -359,7 +359,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
               </button>
               {expandedSections.messages && (
                 <div className="p-5 pt-0 border-t space-y-3">
-                  {fileInfo.rawApiOutput.messages.map((msg: any, index: number) => {
+                  {fileInfo.rawApiOutput.messages.map((msg: { id?: string; prefix?: string; message?: string; subMessage?: string }, index: number) => {
                     const messageId = msg.id || '';
                     const prefix = msg.prefix || 'Info';
                     const message = msg.message || '';
