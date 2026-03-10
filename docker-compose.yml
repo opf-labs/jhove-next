@@ -30,7 +30,7 @@ services:
     image: openpreserve/jhove-rest:latest
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8083:8080"
     environment:
       JAVA_HOME: /opt/java/openjdk
       JHOVE_REST_VERSION: 0.0.1-SNAPSHOT

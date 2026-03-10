@@ -5,6 +5,7 @@ import Rusha from "rusha";
 import { FaHome, FaChartBar, FaInfoCircle } from "react-icons/fa";
 import HomeSection from "@/components/HomeSection";
 import AnalyseSection from "@/components/AnalyseSection";
+
 import AboutSection from "@/components/AboutSection";
 
 declare global {
