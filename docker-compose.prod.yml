@@ -1,0 +1,39 @@
+# Production Docker Compose Configuration
+version: "3.8"
+
+services:
+  # Next.js Frontend Application (Production)
+  jhove-frontend:
+    container_name: jhove-next-app
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://jhove-api:8080
+    depends_on:
+      - jhove-api
+    restart: unless-stopped
+    networks:
+      - jhove-network
+
+  # JHOVE REST API Backend
+  jhove-api:
+    container_name: jhove-api
+    image: openpreserve/jhove-rest:latest
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      JAVA_HOME: /opt/java/openjdk
+      JHOVE_REST_VERSION: 0.0.1-SNAPSHOT
+      PATH: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    command: ["dumb-init", "--", "java", "-Djava.awt.headless=true", "-jar", "/opt/jhove-rest/jhove-rest.jar", "server", "/var/opt/jhove-rest/config/jhove-rest.yml"]
+    networks:
+      - jhove-network
+
+networks:
+  jhove-network:
+    driver: bridge
