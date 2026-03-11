@@ -346,6 +346,7 @@ export default function Home() {
       repInfo?: JhoveRepInfo[];
       [key: string]: unknown;
     };
+    [key: string]: unknown;
   }
 
   interface ApiResult {
