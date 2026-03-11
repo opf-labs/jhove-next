@@ -5,12 +5,14 @@ use std::path::PathBuf;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Settings {
     pub jhove_path: Option<String>,
+    pub jhove_api_url: Option<String>,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Settings {
             jhove_path: None,
+            jhove_api_url: None,
         }
     }
 }
@@ -86,4 +88,10 @@ fn detect_jhove_path() -> Option<String> {
     }
     
     None
+}
+
+/// Get the current JHOVE API URL from settings
+pub fn get_jhove_api_url() -> Option<String> {
+    let settings = load_settings();
+    settings.jhove_api_url
 }

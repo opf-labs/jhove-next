@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Rusha from "rusha";
-import { FaHome, FaChartBar, FaInfoCircle } from "react-icons/fa";
+import { FaHome, FaChartBar, FaInfoCircle, FaCog } from "react-icons/fa";
 import HomeSection from "@/components/HomeSection";
 import AnalyseSection from "@/components/AnalyseSection";
 import AboutSection from "@/components/AboutSection";
+import SettingsSection from "@/components/SettingsSection";
 
 declare global {
   interface Window {
@@ -13,6 +14,14 @@ declare global {
       API_BASE_URL?: string;
     };
   }
+}
+
+interface DebugEntry {
+  timestamp: string;
+  file: string;
+  command: string;
+  output: string;
+  error?: string;
 }
 
 export default function Home() {
@@ -25,6 +34,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastUploadedFile, setLastUploadedFile] = useState<File | null>(null);
+  const [debugLog, setDebugLog] = useState<DebugEntry[]>([]);
 
 
   useEffect(() => {
@@ -148,6 +158,9 @@ export default function Home() {
     formData.append("file", file);
     formData.append("module", module);
 
+    const command = `jhove -m ${module} -h JSON "${file.name}"`;
+    const timestamp = new Date().toISOString();
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/jhove/validate`, {
         method: "POST",
@@ -157,16 +170,50 @@ export default function Home() {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => response.statusText);
-        throw new Error(`API error (${response.status}): ${errorText}`);
+        const errorMsg = `API error (${response.status}): ${errorText}`;
+        
+        // Log error to debug
+        setDebugLog(prev => [...prev, {
+          timestamp,
+          file: file.name,
+          command,
+          output: '',
+          error: errorMsg
+        }]);
+        
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();
+      const output = JSON.stringify(result, null, 2);
+      
+      // Log success to debug
+      setDebugLog(prev => [...prev, {
+        timestamp,
+        file: file.name,
+        command,
+        output
+      }]);
+      
       return result;
     } catch (error) {
       console.error("Error sending data to API:", error);
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new Error("Network error: Unable to connect to JHOVE API. Please check your internet connection.");
+      
+      const errorMsg = error instanceof TypeError && error.message.includes("fetch")
+        ? "Network error: Unable to connect to JHOVE API. Please check your internet connection."
+        : error instanceof Error ? error.message : String(error);
+      
+      // Log error if not already logged
+      if (!(error instanceof Error) || !error.message.startsWith('API error')) {
+        setDebugLog(prev => [...prev, {
+          timestamp,
+          file: file.name,
+          command,
+          output: '',
+          error: errorMsg
+        }]);
       }
+      
       throw error;
     }
   };
@@ -308,7 +355,9 @@ export default function Home() {
           />
         );
       case "About":
-        return <AboutSection />;
+        return <AboutSection debugLog={debugLog} />;
+      case "Settings":
+        return <SettingsSection />;
       default:
         return null;
     }
@@ -348,6 +397,12 @@ export default function Home() {
             onClick={() => setActiveSection("About")}
           >
             <FaInfoCircle className="text-xl" /> <span>About</span>
+          </div>
+          <div
+            className={`menu-item ${activeSection === "Settings" ? "bg-opf-purple" : ""}`}
+            onClick={() => setActiveSection("Settings")}
+          >
+            <FaCog className="text-xl" /> <span>Settings</span>
           </div>
         </nav>
         <main className="main-content overflow-y-auto">{renderContent()}</main>

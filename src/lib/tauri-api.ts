@@ -29,7 +29,7 @@ export interface JhoveResult {
         infoLink?: string;
       }>;
       mimeType?: string;
-      properties?: any[];
+      properties?: unknown[];
     }>;
   };
 }

@@ -52,6 +52,20 @@ async fn validate_jhove_path(path: String) -> Result<bool, String> {
     Ok(jhove::validate_jhove_installation(&path))
 }
 
+#[tauri::command]
+async fn get_jhove_api_url() -> Result<Option<String>, String> {
+    Ok(settings::get_jhove_api_url())
+}
+
+#[tauri::command]
+async fn set_jhove_api_url(url: String) -> Result<bool, String> {
+    let mut settings = settings::load_settings();
+    settings.jhove_api_url = Some(url);
+    settings::save_settings(&settings)?;
+    
+    Ok(true)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -72,6 +86,8 @@ pub fn run() {
         get_jhove_path,
         set_jhove_path,
         validate_jhove_path,
+        get_jhove_api_url,
+        set_jhove_api_url,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
