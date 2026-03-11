@@ -1,12 +1,40 @@
 mod jhove;
 mod settings;
 
+use sha1::{Digest, Sha1};
+use std::fs::File;
+use std::io::Read;
+
+#[tauri::command]
+async fn calculate_sha1(file_path: String) -> Result<String, String> {
+    let mut file = File::open(&file_path)
+        .map_err(|e| format!("Failed to open file: {}", e))?;
+    
+    let mut hasher = Sha1::new();
+    let mut buffer = vec![0; 8192]; // 8KB buffer
+    
+    loop {
+        let bytes_read = file.read(&mut buffer)
+            .map_err(|e| format!("Failed to read file: {}", e))?;
+        
+        if bytes_read == 0 {
+            break;
+        }
+        
+        hasher.update(&buffer[..bytes_read]);
+    }
+    
+    let result = hasher.finalize();
+    Ok(format!("{:x}", result))
+}
+
 #[tauri::command]
 async fn validate_file(file_path: String, module: String) -> Result<String, String> {
     let jhove_path = settings::get_jhove_path()
         .ok_or_else(|| "JHOVE not configured. Please set the JHOVE path in Settings.".to_string())?;
     
-    let module_arg = if module == "AUTO" || module.is_empty() {
+    // If module is empty, AUTO, or not specified, let JHOVE auto-detect (no -m flag)
+    let module_arg = if module.is_empty() || module == "AUTO" {
         None
     } else {
         Some(module.as_str())
@@ -16,8 +44,26 @@ async fn validate_file(file_path: String, module: String) -> Result<String, Stri
 }
 
 #[tauri::command]
+async fn validate_folder(folder_path: String, module: String) -> Result<String, String> {
+    let jhove_path = settings::get_jhove_path()
+        .ok_or_else(|| "JHOVE not configured. Please set the JHOVE path in Settings.".to_string())?;
+    
+    // If module is empty, AUTO, or not specified, let JHOVE auto-detect (no -m flag)
+    let module_arg = if module.is_empty() || module == "AUTO" {
+        None
+    } else {
+        Some(module.as_str())
+    };
+    
+    jhove::execute_jhove_folder(&jhove_path, &folder_path, module_arg)
+}
+
+#[tauri::command]
 async fn get_jhove_modules() -> Result<Vec<String>, String> {
-    Ok(jhove::get_available_modules())
+    let jhove_path = settings::get_jhove_path()
+        .ok_or_else(|| "JHOVE not configured. Please set the JHOVE path in Settings.".to_string())?;
+    
+    jhove::get_available_modules(&jhove_path)
 }
 
 #[tauri::command]
@@ -53,23 +99,17 @@ async fn validate_jhove_path(path: String) -> Result<bool, String> {
 }
 
 #[tauri::command]
-async fn get_jhove_api_url() -> Result<Option<String>, String> {
-    Ok(settings::get_jhove_api_url())
-}
-
-#[tauri::command]
-async fn set_jhove_api_url(url: String) -> Result<bool, String> {
-    let mut settings = settings::load_settings();
-    settings.jhove_api_url = Some(url);
-    settings::save_settings(&settings)?;
-    
-    Ok(true)
+async fn save_file(file_path: String, content: String) -> Result<(), String> {
+    std::fs::write(&file_path, content)
+        .map_err(|e| format!("Failed to save file: {}", e))?;
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_shell::init())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -81,13 +121,14 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
+        calculate_sha1,
         validate_file,
+        validate_folder,
         get_jhove_modules,
         get_jhove_path,
         set_jhove_path,
         validate_jhove_path,
-        get_jhove_api_url,
-        set_jhove_api_url,
+        save_file,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

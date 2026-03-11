@@ -13,6 +13,18 @@ interface AboutSectionProps {
 }
 
 export default function AboutSection({ debugLog = [] }: AboutSectionProps) {
+  const openExternalLink = async (url: string) => {
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(url);
+    } catch (error) {
+      console.error('Failed to open external link:', error);
+      // Fallback for web environment
+      if (typeof window !== 'undefined') {
+        window.open(url, '_blank');
+      }
+    }
+  };
   return (
     <div className="p-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">About JHOVE Desktop</h1>
@@ -109,19 +121,21 @@ export default function AboutSection({ debugLog = [] }: AboutSectionProps) {
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-5 rounded-lg shadow-sm">
           <div className="mb-3">
             <span className="font-semibold text-blue-900">Official Website:</span>
-            <a href="https://jhove.openpreservation.org" 
-              target="_blank" rel="noopener noreferrer" 
-              className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium flex items-center gap-1">
+            <button
+              onClick={() => openExternalLink('https://jhove.openpreservation.org')}
+              className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium flex items-center gap-1 cursor-pointer"
+            >
               <FaBook className="text-sm" /> jhove.openpreservation.org
-            </a>
+            </button>
           </div>
           <div className="flex items-center">
             <span className="font-semibold text-blue-900">Download JHOVE:</span>
-            <a href="https://software.openpreservation.org/releases/jhove-latest.jar" 
-              target="_blank" rel="noopener noreferrer" 
-              className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium">
+            <button
+              onClick={() => openExternalLink('https://software.openpreservation.org/releases/jhove-latest.jar')}
+              className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer"
+            >
               Download Latest Version
-            </a>
+            </button>
           </div>
         </div>
       </section>
@@ -134,8 +148,12 @@ export default function AboutSection({ debugLog = [] }: AboutSectionProps) {
           preservation, including JHOVE.
         </p>
         <p className="mb-4 text-lg leading-relaxed">
-          Learn more at: <a href="https://openpreservation.org" target="_blank" rel="noopener noreferrer" 
-            className="text-blue-500 hover:underline">openpreservation.org</a>
+          Learn more at: <button
+            onClick={() => openExternalLink('https://openpreservation.org')}
+            className="text-blue-500 hover:underline cursor-pointer"
+          >
+            openpreservation.org
+          </button>
         </p>
       </section>
 

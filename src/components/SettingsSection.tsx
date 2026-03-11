@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaCog, FaFolder, FaCheckCircle, FaTimesCircle, FaSave, FaGlobe } from "react-icons/fa";
+import { FaCog, FaFolder, FaCheckCircle, FaTimesCircle, FaSave } from "react-icons/fa";
 
 interface SettingsSectionProps {
   onJhovePathChange?: (path: string) => void;
@@ -9,9 +9,7 @@ interface SettingsSectionProps {
 
 export default function SettingsSection({ onJhovePathChange }: SettingsSectionProps) {
   const [jhovePathInput, setJhovePathInput] = useState("");
-  const [jhoveApiUrl, setJhoveApiUrl] = useState("");
   const [currentPath, setCurrentPath] = useState<string | null>(null);
-  const [currentApiUrl, setCurrentApiUrl] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +34,6 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
   useEffect(() => {
     if (isTauri) {
       loadCurrentPath();
-      loadCurrentApiUrl();
     }
   }, [isTauri]);
 
@@ -56,20 +53,7 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
     }
   };
 
-  const loadCurrentApiUrl = async () => {
-    if (!isTauri) return;
 
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      const url = await invoke<string | null>('get_jhove_api_url');
-      setCurrentApiUrl(url);
-      if (url) {
-        setJhoveApiUrl(url);
-      }
-    } catch (error) {
-      console.error("Failed to load JHOVE API URL:", error);
-    }
-  };
 
   const handleBrowse = async () => {
     if (!isTauri) return;
@@ -121,21 +105,7 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
   };
 
   const handleSave = async () => {
-    if (!isTauri) {
-      return;
-    }
-
-    // Validate at least one setting is provided
-    if (!jhovePathInput && !jhoveApiUrl) {
-      setSaveMessage("Please provide at least one setting (JHOVE path or API URL)");
-      setTimeout(() => setSaveMessage(null), 3000);
-      return;
-    }
-
-    // If JHOVE path is provided, it must be valid
-    if (jhovePathInput && isValid !== true) {
-      setSaveMessage("Please provide a valid JHOVE path or leave it empty");
-      setTimeout(() => setSaveMessage(null), 3000);
+    if (!isTauri || !jhovePathInput || isValid !== true) {
       return;
     }
 
@@ -144,37 +114,20 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
 
     try {
       const { invoke } = await import('@tauri-apps/api/core');
+      const success = await invoke<boolean>('set_jhove_path', { path: jhovePathInput });
       
-      let pathSuccess = true;
-      let apiSuccess = true;
-
-      // Save JHOVE path if provided
-      if (jhovePathInput) {
-        pathSuccess = await invoke<boolean>('set_jhove_path', { path: jhovePathInput });
-        if (pathSuccess) {
-          setCurrentPath(jhovePathInput);
-          if (onJhovePathChange) {
-            onJhovePathChange(jhovePathInput);
-          }
-        }
-      }
-
-      // Save API URL if provided
-      if (jhoveApiUrl) {
-        apiSuccess = await invoke<boolean>('set_jhove_api_url', { url: jhoveApiUrl });
-        if (apiSuccess) {
-          setCurrentApiUrl(jhoveApiUrl);
-        }
-      }
-      
-      if (pathSuccess && apiSuccess) {
+      if (success) {
+        setCurrentPath(jhovePathInput);
         setSaveMessage("Settings saved successfully!");
+        if (onJhovePathChange) {
+          onJhovePathChange(jhovePathInput);
+        }
         setTimeout(() => setSaveMessage(null), 3000);
       } else {
-        setSaveMessage("Failed to save some settings");
+        setSaveMessage("Failed to save settings");
       }
     } catch (error) {
-      console.error("Failed to save settings:", error);
+      console.error("Failed to save JHOVE path:", error);
       setSaveMessage(`Error: ${error}`);
     } finally {
       setIsSaving(false);
@@ -237,39 +190,6 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
         <div className="flex items-center gap-3 mb-6">
           <FaCog className="text-3xl text-indigo-600" />
           <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
-        </div>
-
-        {/* JHOVE REST API Configuration */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
-            <FaGlobe className="text-indigo-600" />
-            JHOVE REST API
-          </h3>
-          
-          {/* Current API URL Display */}
-          {currentApiUrl && (
-            <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
-              <p className="text-sm text-gray-600 mb-1">Current API URL:</p>
-              <p className="text-sm font-mono text-gray-800 break-all">{currentApiUrl}</p>
-            </div>
-          )}
-
-          {/* API URL Input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              JHOVE REST API URL
-            </label>
-            <input
-              type="text"
-              value={jhoveApiUrl}
-              onChange={(e) => setJhoveApiUrl(e.target.value)}
-              placeholder="http://localhost:8080/jhove-rest or https://api.example.com/jhove"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <p className="mt-2 text-xs text-gray-500">
-              Enter the base URL for your JHOVE REST API service (optional, alternative to CLI)
-            </p>
-          </div>
         </div>
 
         {/* JHOVE CLI Path Configuration */}
@@ -343,15 +263,15 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
           </div>
         </div>
 
-        {/* Save Button - applies to all settings */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {/* Save Button */}
+        <div className="flex gap-3 mt-4">
           <button
             onClick={handleSave}
-            disabled={isSaving || (!jhovePathInput && !jhoveApiUrl)}
-            className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-lg font-semibold"
+            disabled={isSaving || isValid !== true || !jhovePathInput}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
           >
             <FaSave />
-            {isSaving ? "Saving..." : "Save All Settings"}
+            {isSaving ? "Saving..." : "Save Settings"}
           </button>
 
           {/* Save Message */}
@@ -371,14 +291,13 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
           <div className="ml-3">
             <h4 className="text-sm font-semibold text-blue-800 mb-2">How to configure JHOVE:</h4>
             <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-              <li><strong>REST API:</strong> Enter the URL of your JHOVE REST API service</li>
-              <li><strong>CLI Tool:</strong> Click "Auto-Detect JHOVE" to search common installation locations</li>
+              <li>Click "Auto-Detect JHOVE" to search common installation locations</li>
               <li>Or click "Browse" to manually select the JHOVE executable</li>
-              <li>The CLI path will be validated automatically</li>
-              <li>Click "Save All Settings" to store your configuration</li>
+              <li>The path will be validated automatically</li>
+              <li>Click "Save Settings" to store your configuration</li>
             </ol>
             <p className="text-sm text-blue-700 mt-3">
-              You can configure either the REST API, CLI tool, or both. Don't have JHOVE installed? Download it from: <a href="https://jhove.openpreservation.org/getting-started/" target="_blank" rel="noopener noreferrer" className="underline">jhove.openpreservation.org</a>
+              Don't have JHOVE installed? Download it from: <a href="https://jhove.openpreservation.org/getting-started/" target="_blank" rel="noopener noreferrer" className="underline">jhove.openpreservation.org</a>
             </p>
           </div>
         </div>

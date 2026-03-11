@@ -1,27 +1,23 @@
-import { FaUpload, FaInfoCircle, FaMagic, FaCogs } from "react-icons/fa";
+import { FaFolderOpen, FaInfoCircle, FaMagic, FaCogs, FaFile } from "react-icons/fa";
 
 interface HomeSectionProps {
   selectedModule: string;
-  isDragging: boolean;
+  availableModules: string[];
   isProcessing?: boolean;
   error?: string | null;
   onModuleChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDragLeave: () => void;
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
-  onFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileSelect: () => void;
+  onFolderSelect: () => void;
 }
 
 export default function HomeSection({
   selectedModule,
-  isDragging,
+  availableModules,
   isProcessing = false,
   error = null,
   onModuleChange,
-  onDragOver,
-  onDragLeave,
-  onDrop,
   onFileSelect,
+  onFolderSelect,
 }: HomeSectionProps) {
   return (
     <div className="flex items-center justify-center min-h-full p-8">
@@ -32,43 +28,11 @@ export default function HomeSection({
             Validate Your Digital Files
           </h1>
           <p className="text-lg text-gray-600">
-            Upload a file to check if it meets format specifications and preservation standards
+            Select a file or folder to validate against format specifications and preservation standards
           </p>
         </div>
 
-        {/* How it Works Card */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-indigo-200 rounded-xl p-6 mb-8 shadow-sm">
-          <div className="flex items-start gap-3 mb-4">
-            <FaInfoCircle className="text-2xl text-indigo-600 mt-1" />
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">How It Works</h2>
-              <div className="text-gray-700 space-y-2">
-                <p className="flex items-start gap-2">
-                  <span className="font-bold text-indigo-600">1.</span>
-                  <span><strong>Select a module</strong> - Choose &ldquo;Auto-detect&rdquo; to let us figure out your file type, or pick a specific format module.</span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <span className="font-bold text-indigo-600">2.</span>
-                  <span><strong>Upload your file</strong> - Drag &amp; drop or click to browse.</span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <span className="font-bold text-indigo-600">3.</span>
-                  <span><strong>View results</strong> - Get detailed validation reports instantly.</span>
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white/50 rounded-lg p-4 mt-4">
-            <div className="flex items-start gap-2">
-              <FaMagic className="text-indigo-600 mt-1" />
-              <div className="text-sm">
-                <strong className="text-gray-800">Auto-detect Feature:</strong>
-                <span className="text-gray-700"> Our smart detection analyzes your file extension and type to automatically select the best validation module (JPEG, PDF, PNG, TIFF, WAV, and more).</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      
 
         {/* Main Card */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -91,41 +55,29 @@ export default function HomeSection({
               value={selectedModule}
               onChange={onModuleChange}
             >
-              <option value="AUTO">🔍 Auto-detect (Recommended)</option>
-              <option value="BYTESTREAM">BYTESTREAM (Generic)</option>
-              <option value="AIFF-hul">AIFF-hul</option>
-              <option value="ASCII-hul">ASCII-hul</option>
-              <option value="EPUB-ptc">EPUB-ptc</option>
-              <option value="GIF-hul">GIF-hul</option>
-              <option value="GZIP-kb">GZIP-kb</option>
-              <option value="HTML-hul">HTML-hul</option>
-              <option value="JPEG-hul">JPEG-hul</option>
-              <option value="JPEG2000-hul">JPEG2000-hul</option>
-              <option value="PDF-hul">PDF-hul</option>
-              <option value="PNG-gdm">PNG-gdm</option>
-              <option value="TIFF-hul">TIFF-hul</option>
-              <option value="UTF8-hul">UTF8-hul</option>
-              <option value="WARC-kb">WARC-kb</option>
-              <option value="WAVE-hul">WAVE-hul</option>
-              <option value="XML-hul">XML-hul</option>
+              {availableModules.map((module) => (
+                <option key={module} value={module}>
+                  {module === "AUTO" ? "🔍 Auto-detect (Recommended)" : module}
+                </option>
+              ))}
             </select>
             
             {selectedModule === "AUTO" && (
               <div className="mt-3 text-sm text-gray-600 bg-white/60 p-3 rounded-lg">
-                ℹ️ Auto-detect will analyze your file and choose the best module automatically
+                ℹ️ AUTO mode lets JHOVE automatically detect and use the appropriate module for your file
               </div>
             )}
           </div>
 
-          {/* Step 2: File Upload */}
+          {/* Step 2: File / Folder Scanning */}
           <div className="p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
                 2
               </div>
               <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                <FaUpload className="text-indigo-600" />
-                Upload Your File
+                <FaFolderOpen className="text-indigo-600" />
+                Select File or Folder
               </h3>
             </div>
 
@@ -147,47 +99,102 @@ export default function HomeSection({
                   <span className="text-xl mr-3 animate-pulse">⏳</span>
                   <div>
                     <strong className="font-semibold">Processing</strong>
-                    <p className="text-sm mt-1">Validating your file, please wait...</p>
+                    <p className="text-sm mt-1">Validating files, please wait...</p>
                   </div>
                 </div>
               </div>
             )}
             
-            <div
-              className={`border-3 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
-                isDragging 
-                  ? "border-green-500 bg-green-50 scale-105" 
-                  : "border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400"
-              } ${isProcessing ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
-            >
-              <FaUpload className={`mx-auto text-5xl mb-4 ${isDragging ? "text-green-500" : "text-gray-400"}`} />
-              <p className="text-xl font-semibold text-gray-700 mb-2">
-                {isDragging ? "Drop your file here" : "Drag & drop your file here"}
-              </p>
-              <p className="text-gray-500 mb-4">or</p>
-              <input
-                type="file"
-                className="hidden"
-                id="file-upload"
-                onChange={onFileSelect}
-                disabled={isProcessing}
-              />
-              <label
-                htmlFor="file-upload"
-                className={`inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all ${
-                  isProcessing 
-                    ? "cursor-not-allowed opacity-50" 
-                    : "hover:bg-indigo-700 hover:shadow-lg cursor-pointer"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* File Selection */}
+              <div
+                className={`border-2 border-indigo-300 rounded-xl p-8 text-center transition-all duration-200 bg-white hover:shadow-lg ${
+                  isProcessing ? "opacity-50 pointer-events-none" : ""
                 }`}
               >
-                {isProcessing ? "Processing..." : "Browse Files"}
-              </label>
-              <p className="text-sm text-gray-500 mt-4">
-                Supports: JPEG, PNG, PDF, TIFF, WAV, AIFF, HTML, XML, EPUB, and more
-              </p>
+                <FaFile className="mx-auto text-4xl mb-4 text-indigo-600" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Select Single File
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Validate a single file
+                </p>
+                <button
+                  onClick={onFileSelect}
+                  disabled={isProcessing}
+                  className={`w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all ${
+                    isProcessing 
+                      ? "cursor-not-allowed opacity-50" 
+                      : "hover:bg-indigo-700 hover:shadow-lg cursor-pointer"
+                  }`}
+                >
+                  {isProcessing ? "Processing..." : "Select File"}
+                </button>
+              </div>
+
+              {/* Folder Selection */}
+              <div
+                className={`border-2 border-purple-300 rounded-xl p-8 text-center transition-all duration-200 bg-white hover:shadow-lg ${
+                  isProcessing ? "opacity-50 pointer-events-none" : ""
+                }`}
+              >
+                <FaCogs className="mx-auto text-4xl mb-4 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Select Folder
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Recursively validate all files in a folder
+                </p>
+                <button
+                  onClick={onFolderSelect}
+                  disabled={isProcessing}
+                  className={`w-full px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md transition-all ${
+                    isProcessing 
+                      ? "cursor-not-allowed opacity-50" 
+                      : "hover:bg-purple-700 hover:shadow-lg cursor-pointer"
+                  }`}
+                >
+                  {isProcessing ? "Processing..." : "Select Folder"}
+                </button>
+              </div>
+            </div>
+            
+            <p className="text-sm text-gray-500 mt-4 text-center">
+              Supports: JPEG, PNG, PDF, TIFF, WAV, AIFF, HTML, XML, EPUB, and more
+            </p>
+          </div>
+        </div>
+
+          {/* How it Works Card */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-indigo-200 rounded-xl p-6 mb-8 shadow-sm">
+          <div className="flex items-start gap-3 mb-4">
+            <FaInfoCircle className="text-2xl text-indigo-600 mt-1" />
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-2">How It Works</h2>
+              <div className="text-gray-700 space-y-2">
+                <p className="flex items-start gap-2">
+                  <span className="font-bold text-indigo-600">1.</span>
+                  <span><strong>Select a module</strong> - Choose &ldquo;AUTO&rdquo; to let JHOVE detect your file format, or pick a specific format module.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="font-bold text-indigo-600">2.</span>
+                  <span><strong>Select file or folder</strong> - Choose a single file or an entire folder for batch validation.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="font-bold text-indigo-600">3.</span>
+                  <span><strong>View results</strong> - Get detailed validation reports instantly.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/50 rounded-lg p-4 mt-4">
+            <div className="flex items-start gap-2">
+              <FaMagic className="text-indigo-600 mt-1" />
+              <div className="text-sm">
+                <strong className="text-gray-800">AUTO Mode:</strong>
+                <span className="text-gray-700"> When you select AUTO, JHOVE will automatically detect the best validation module for your file format.</span>
+              </div>
             </div>
           </div>
         </div>

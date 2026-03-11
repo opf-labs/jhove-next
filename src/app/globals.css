@@ -53,7 +53,6 @@ body {
 .main-content {
   flex: 1;
   background-color: white; /* White background */
-  border: 2px solid #001f3f; /* Dark blue border */
   padding: 16px;
   color: black; /* Black text */
   overflow-y: auto;
