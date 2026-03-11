@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Rusha from "rusha";
 import { FaHome, FaChartBar, FaInfoCircle, FaCog } from "react-icons/fa";
 import HomeSection from "@/components/HomeSection";
@@ -447,6 +448,13 @@ export default function Home() {
       <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
+            <Image 
+              src="/jhove-logo.png" 
+              alt="JHOVE Logo" 
+              width={48} 
+              height={48}
+              className="w-12 h-12"
+            />
             <div className="text-3xl font-bold">JHOVE</div>
             <div className="text-sm opacity-90 hidden sm:block">
               Format Validation & Characterization

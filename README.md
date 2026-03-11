@@ -1,23 +1,41 @@
-# JHOVE Next.js Wrapper
+# JHOVE Desktop
 
-This project is a Next.js application that serves as a wrapper for the JHOVE API. It provides a modern web interface to interact with the JHOVE API for digital preservation and file format validation.
+A modern desktop application for file validation and characterization using JHOVE (JSTOR/Harvard Object Validation Environment).
 
 ## Features
 
-- Built with [Next.js](https://nextjs.org/), a React framework for server-side rendering and static site generation.
-- Wraps the JHOVE API to provide a user-friendly interface for interacting with its functionality.
-- Easy to build and deploy using Node.js and npm.
+- **Desktop Application**: Built with [Tauri](https://tauri.app/) and [Next.js](https://nextjs.org/) for a native desktop experience
+- **File & Folder Validation**: Validate single files or entire folders recursively
+- **Format Support**: JPEG, PNG, PDF, TIFF, WAV, AIFF, HTML, XML, EPUB, and more
+- **Auto-Detection**: Automatically detect file formats or choose specific modules
+- **Scan History**: Track and revisit previous validation results
+- **Export Reports**: Save validation reports as JSON files
+- **Cross-Platform**: Runs on macOS, Windows, and Linux
 
-## Prerequisites
+## Installation
 
-Before you begin, ensure you have the following installed on your system:
+### Download Pre-built Binaries
 
-- [Node.js](https://nodejs.org/) (version 14 or higher recommended)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
+Download the latest release from the [Releases](https://github.com/darrendignam/jhove-next/releases) page:
 
-## Getting Started
+- **macOS**: Download the `.dmg` file for your architecture (Intel or Apple Silicon)
+- **Windows**: Download the `.msi` installer
+- **Linux**: Download the `.AppImage` or `.deb` file
 
-Follow these steps to set up and run the project locally:
+### Requirements
+
+- JHOVE must be installed on your system
+- On first launch, configure the path to your JHOVE executable in Settings
+
+## Development
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (version 18 or higher recommended)
+- [Rust](https://www.rust-lang.org/) (latest stable version)
+- [JHOVE](https://jhove.openpreservation.org/) installed on your system
+
+### Setup
 
 1. Clone the repository:
    ```bash
@@ -32,19 +50,33 @@ Follow these steps to set up and run the project locally:
 
 3. Run the development server:
    ```bash
-   npm run dev
+   npm run tauri:dev
    ```
-   The application will be available at `http://localhost:3000`.
+   This will start both the Next.js frontend and the Tauri backend.
 
-4. Build the application for production:
+4. Build for production:
    ```bash
-   npm run build
+   npm run tauri:build
+   ```
+   The built application will be in `src-tauri/target/release/bundle/`
+
+## Creating a Release
+
+To create a new release that triggers automated builds:
+
+1. Update the version in `src-tauri/Cargo.toml`
+2. Update `CHANGELOG.md` with release notes
+3. Commit your changes:
+   ```bash
+   git commit -am "Release v1.0.0"
+   ```
+4. Create and push a tag:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
    ```
 
-5. Start the production server:
-   ```bash
-   npm start
-   ```
+GitHub Actions will automatically build the application for macOS (Intel & Apple Silicon), Windows, and Linux, then create a GitHub release with all the binaries.
 
 ## Acknowledgments
 

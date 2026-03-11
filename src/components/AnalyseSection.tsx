@@ -174,7 +174,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
               >
                 {availableModules.map((module) => (
                   <option key={module} value={module}>
-                    {module === "AUTO" ? "🔍 Auto-detect" : module === "BYTESTREAM" ? "BYTESTREAM (Generic)" : module}
+                    {module === "AUTO" ? "Auto-detect" : module === "BYTESTREAM" ? "BYTESTREAM (Generic)" : module}
                   </option>
                 ))}
               </select>

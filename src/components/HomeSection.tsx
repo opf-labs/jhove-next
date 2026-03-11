@@ -1,4 +1,4 @@
-import { FaFolderOpen, FaInfoCircle, FaMagic, FaCogs, FaFile } from "react-icons/fa";
+import { FaFolderOpen, FaInfoCircle, FaMagic, FaCogs, FaFile, FaExclamationTriangle, FaSpinner } from "react-icons/fa";
 
 interface HomeSectionProps {
   selectedModule: string;
@@ -57,14 +57,15 @@ export default function HomeSection({
             >
               {availableModules.map((module) => (
                 <option key={module} value={module}>
-                  {module === "AUTO" ? "🔍 Auto-detect (Recommended)" : module}
+                  {module === "AUTO" ? "Auto-detect (Recommended)" : module}
                 </option>
               ))}
             </select>
             
             {selectedModule === "AUTO" && (
-              <div className="mt-3 text-sm text-gray-600 bg-white/60 p-3 rounded-lg">
-                ℹ️ AUTO mode lets JHOVE automatically detect and use the appropriate module for your file
+              <div className="mt-3 text-sm text-gray-600 bg-white/60 p-3 rounded-lg flex items-center gap-2">
+                <FaInfoCircle className="text-indigo-600" />
+                <span>AUTO mode lets JHOVE automatically detect and use the appropriate module for your file</span>
               </div>
             )}
           </div>
@@ -84,7 +85,7 @@ export default function HomeSection({
             {error && (
               <div className="bg-red-50 border-l-4 border-red-500 text-red-800 px-4 py-3 rounded-lg shadow-sm mb-4" role="alert">
                 <div className="flex items-start">
-                  <span className="text-xl mr-3">⚠️</span>
+                  <FaExclamationTriangle className="text-xl mr-3 flex-shrink-0" />
                   <div>
                     <strong className="font-semibold">Error</strong>
                     <p className="text-sm mt-1">{error}</p>
@@ -96,7 +97,7 @@ export default function HomeSection({
             {isProcessing && (
               <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-800 px-4 py-3 rounded-lg shadow-sm mb-4" role="alert">
                 <div className="flex items-start">
-                  <span className="text-xl mr-3 animate-pulse">⏳</span>
+                  <FaSpinner className="text-xl mr-3 animate-spin flex-shrink-0" />
                   <div>
                     <strong className="font-semibold">Processing</strong>
                     <p className="text-sm mt-1">Validating files, please wait...</p>
