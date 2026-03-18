@@ -81,14 +81,14 @@ export default function HistorySidebar({ history, onSelectHistory, currentTimest
           </div>
         ) : (
           <div className="p-2">
-            {sortedHistory.map((entry, index) => {
+            {sortedHistory.map((entry) => {
               const fileName = getFileName(entry.file);
               const isFolderScan = isFolder(entry.file);
               const isActive = currentTimestamp === entry.timestamp;
               
               return (
                 <div
-                  key={index}
+                  key={entry.timestamp}
                   onClick={() => onSelectHistory(entry)}
                   className={`
                     mb-2 p-3 rounded-lg border-2 transition-all cursor-pointer

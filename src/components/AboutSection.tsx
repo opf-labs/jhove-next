@@ -19,10 +19,6 @@ export default function AboutSection({ debugLog = [] }: AboutSectionProps) {
       await open(url);
     } catch (error) {
       console.error('Failed to open external link:', error);
-      // Fallback for web environment
-      if (typeof window !== 'undefined') {
-        window.open(url, '_blank');
-      }
     }
   };
   return (
@@ -166,7 +162,7 @@ export default function AboutSection({ debugLog = [] }: AboutSectionProps) {
           <strong>This Application:</strong> Built with Tauri, Next.js, React, and Tailwind CSS
         </p>
         <p className="mb-2 text-lg leading-relaxed">
-          <strong>Version:</strong> 1.0.0
+          <strong>Version:</strong> 0.1.1
         </p>
       </section>
 

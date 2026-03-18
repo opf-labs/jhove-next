@@ -100,6 +100,29 @@ async fn validate_jhove_path(path: String) -> Result<bool, String> {
 
 #[tauri::command]
 async fn save_file(file_path: String, content: String) -> Result<(), String> {
+    use std::path::Path;
+    
+    // Validate the file path is not empty
+    if file_path.is_empty() {
+        return Err("File path cannot be empty".to_string());
+    }
+    
+    let path = Path::new(&file_path);
+    
+    // Ensure the file has a .json extension (since this is only used for JSON reports)
+    if path.extension().and_then(|s| s.to_str()) != Some("json") {
+        return Err("Only .json files are allowed".to_string());
+    }
+    
+    // Ensure parent directory exists or can be created
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create directory: {}", e))?;
+        }
+    }
+    
+    // Write the file
     std::fs::write(&file_path, content)
         .map_err(|e| format!("Failed to save file: {}", e))?;
     Ok(())

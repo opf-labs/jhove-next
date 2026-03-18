@@ -14,32 +14,12 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [detectedPath, setDetectedPath] = useState<string | null>(null);
-  const [isTauri, setIsTauri] = useState(false);
 
-  // Check if we're in a Tauri environment
   useEffect(() => {
-    const checkTauri = async () => {
-      try {
-        // Try to dynamically import Tauri - if successful, we're in desktop mode
-        await import('@tauri-apps/api/core');
-        setIsTauri(true);
-      } catch {
-        setIsTauri(false);
-      }
-    };
-    checkTauri();
+    loadCurrentPath();
   }, []);
 
-  useEffect(() => {
-    if (isTauri) {
-      loadCurrentPath();
-    }
-  }, [isTauri]);
-
   const loadCurrentPath = async () => {
-    if (!isTauri) return;
-
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       const path = await invoke<string | null>('get_jhove_path');
@@ -56,8 +36,6 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
 
 
   const handleBrowse = async () => {
-    if (!isTauri) return;
-
     try {
       const { open } = await import('@tauri-apps/plugin-dialog');
       const selected = await open({
@@ -80,7 +58,7 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
   };
 
   const validatePath = async (path: string) => {
-    if (!isTauri || !path) {
+    if (!path) {
       setIsValid(null);
       return;
     }
@@ -92,10 +70,6 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
       const { invoke } = await import('@tauri-apps/api/core');
       const valid = await invoke<boolean>('validate_jhove_path', { path });
       setIsValid(valid);
-      
-      if (valid) {
-        setDetectedPath(path);
-      }
     } catch (error) {
       console.error("Failed to validate JHOVE path:", error);
       setIsValid(false);
@@ -105,7 +79,7 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
   };
 
   const handleSave = async () => {
-    if (!isTauri || !jhovePathInput || isValid !== true) {
+    if (!jhovePathInput || isValid !== true) {
       return;
     }
 
@@ -135,8 +109,6 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
   };
 
   const handleAutoDetect = async () => {
-    if (!isTauri) return;
-
     setIsValidating(true);
     try {
       const { invoke } = await import('@tauri-apps/api/core');
@@ -144,7 +116,6 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
       
       if (path) {
         setJhovePathInput(path);
-        setDetectedPath(path);
         setIsValid(true);
         setSaveMessage("JHOVE installation detected!");
         setTimeout(() => setSaveMessage(null), 3000);
@@ -159,29 +130,6 @@ export default function SettingsSection({ onJhovePathChange }: SettingsSectionPr
       setIsValidating(false);
     }
   };
-
-  if (!isTauri) {
-    return (
-      <div className="p-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <FaCog className="text-3xl text-indigo-600" />
-            <h2 className="text-2xl font-bold text-gray-800">Settings</h2>
-          </div>
-          
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  Settings are only available in the desktop application. You are currently using the web version.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-8">

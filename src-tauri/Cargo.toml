@@ -1,6 +1,6 @@
 [package]
 name = "jhove-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Desktop application for JHOVE file format validation and digital preservation"
 authors = ["Darren Dignam <darrendignam@users.noreply.github.com>"]
 license = "Apache-2.0"

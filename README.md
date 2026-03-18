@@ -1,85 +1,225 @@
 # JHOVE Desktop
 
-A modern desktop application for file validation and characterization using JHOVE (JSTOR/Harvard Object Validation Environment).
+> A modern, cross-platform desktop application for validating and characterizing digital files using JHOVE (JSTOR/Harvard Object Validation Environment).
+
+Built with **Tauri 2.10** for native performance, **Next.js 16** for a modern UI, and **React 19** for a responsive user experience. No web server required – it's a true desktop app that runs entirely on your local machine.
+
+---
 
 ## Features
 
-- **Desktop Application**: Built with [Tauri](https://tauri.app/) and [Next.js](https://nextjs.org/) for a native desktop experience
-- **File & Folder Validation**: Validate single files or entire folders recursively
-- **Format Support**: JPEG, PNG, PDF, TIFF, WAV, AIFF, HTML, XML, EPUB, and more
-- **Auto-Detection**: Automatically detect file formats or choose specific modules
-- **Scan History**: Track and revisit previous validation results
-- **Export Reports**: Save validation reports as JSON files
-- **Cross-Platform**: Runs on macOS, Windows, and Linux
+### Core Functionality
+- **Single File & Batch Validation** – Validate individual files or entire folder hierarchies recursively
+- **Smart Format Detection** – Automatically detect file formats or choose specific JHOVE modules
+- **Comprehensive Reports** – Get detailed validation results with technical metadata and format-specific properties
+- **Built-in SHA-1 Checksums** – Generate and verify file checksums on-demand
+- **Export to JSON** – Save validation reports with native file dialogs for archiving or further processing
 
-## Installation
+### User Experience
+- **Scan History** – Track and revisit previous validations with an intuitive sidebar
+- **Rescan on Demand** – Quickly re-validate files with different modules to compare results
+- **Native Desktop UI** – True desktop application with native file dialogs and performance
+- **Clean Interface** – Tailored for technical users who need quick access to validation details
 
-### Download Pre-built Binaries
+### Supported Formats
+JPEG, PNG, GIF, PDF, TIFF, HTML, XML, UTF-8, ASCII, WAVE, AIFF, EPUB, and more via JHOVE's extensible module system.
 
-Download the latest release from the [Releases](https://github.com/darrendignam/jhove-next/releases) page:
+---
 
-- **macOS**: Download the `.dmg` file for your architecture (Intel or Apple Silicon)
-- **Windows**: Download the `.msi` installer
-- **Linux**: Download the `.AppImage` or `.deb` file
+## Quick Start
 
-### Requirements
+### For End Users
 
-- JHOVE must be installed on your system
-- On first launch, configure the path to your JHOVE executable in Settings
+1. **Download** the latest release for your platform:
+   - [macOS](https://github.com/darrendignam/jhove-next/releases) (`.dmg` for Intel or Apple Silicon)
+   - [Windows](https://github.com/darrendignam/jhove-next/releases) (`.msi` installer)
+   - [Linux](https://github.com/darrendignam/jhove-next/releases) (`.AppImage` or `.deb`)
 
-## Development
+2. **Install JHOVE** if you haven't already:
+   - Download from [JHOVE's official site](https://jhove.openpreservation.org/)
+   - Or install via your package manager (e.g., `brew install jhove` on macOS)
+
+3. **Launch** the app and configure the JHOVE executable path in **Settings** on first run
+
+4. **Start validating!** Drop files or folders to analyze them
+
+---
+
+## Development Setup
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (version 18 or higher recommended)
-- [Rust](https://www.rust-lang.org/) (latest stable version)
-- [JHOVE](https://jhove.openpreservation.org/) installed on your system
+You'll need these installed on your system:
 
-### Setup
+- **Node.js** 18+ (20 or 21 recommended) – [Download](https://nodejs.org/)
+- **Rust** 1.77.2+ (latest stable recommended) – [Install](https://www.rust-lang.org/)
+- **JHOVE** – [Get it here](https://jhove.openpreservation.org/)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/darrendignam/jhove-next.git
-   cd jhove-next
-   ```
+Platform-specific dependencies:
+- **Linux**: `webkit2gtk`, `libssl`, `libayatana-appindicator` (see [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/))
+- **macOS**: Xcode Command Line Tools
+- **Windows**: Visual Studio Build Tools with C++ support
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### Getting Started
 
-3. Run the development server:
-   ```bash
-   npm run tauri:dev
-   ```
-   This will start both the Next.js frontend and the Tauri backend.
+```bash
+# Clone the repository
+git clone https://github.com/darrendignam/jhove-next.git
+cd jhove-next
 
-4. Build for production:
-   ```bash
-   npm run tauri:build
-   ```
-   The built application will be in `src-tauri/target/release/bundle/`
+# Install JavaScript dependencies
+npm install
+
+# Start development mode (hot-reload enabled)
+npm run tauri:dev
+
+# Build for production
+npm run tauri:build
+```
+
+The dev server will launch both the Next.js frontend and Tauri backend with hot-reload. Production builds are output to `src-tauri/target/release/bundle/`.
+
+### Tech Stack
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| **Desktop Framework** | [Tauri](https://tauri.app/) | 2.10.3 |
+| **Frontend Framework** | [Next.js](https://nextjs.org/) | 16.1.6 |
+| **UI Library** | [React](https://react.dev/) | 19.0.0 |
+| **Styling** | [Tailwind CSS](https://tailwindcss.com/) | 4.x |
+| **Backend Language** | Rust | 1.77.2+ |
+| **Build Mode** | Static Export (`output: 'export'`) | – |
+
+### Project Structure
+
+```
+jhove-next/
+├── src/                          # Next.js frontend
+│   ├── app/                      # App router pages
+│   ├── components/               # React components
+│   │   ├── AnalyseSection.tsx    # Validation results display
+│   │   ├── HistorySidebar.tsx    # Scan history UI
+│   │   └── SettingsSection.tsx   # JHOVE path configuration
+│   └── lib/                      # Utilities and API wrappers
+├── src-tauri/                    # Tauri backend (Rust)
+│   ├── src/
+│   │   ├── main.rs               # Entry point
+│   │   ├── lib.rs                # Command handlers
+│   │   ├── jhove.rs              # JHOVE CLI integration
+│   │   └── settings.rs           # Configuration management
+│   ├── Cargo.toml                # Rust dependencies
+│   └── tauri.conf.json           # Tauri configuration
+└── public/                       # Static assets
+```
+
+---
+
+## Building with Docker (Optional)
+
+Want a reproducible build environment? Use Docker to isolate the build process.
+
+### For Linux Builds
+
+```dockerfile
+FROM rust:latest
+
+# Install Node.js 20.x
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+
+# Install Tauri dependencies
+RUN apt-get update && apt-get install -y \
+    libwebkit2gtk-4.1-dev \
+    build-essential \
+    curl \
+    wget \
+    file \
+    libxdo-dev \
+    libssl-dev \
+    libayatana-appindicator3-dev \
+    librsvg2-dev
+
+WORKDIR /app
+COPY . .
+
+RUN npm install
+RUN npm run tauri:build
+```
+
+### Build and Extract
+
+```bash
+# Build the Docker image
+docker build -t jhove-desktop-builder .
+
+# Extract the built artifacts
+docker create --name jhove-builder jhove-desktop-builder
+docker cp jhove-builder:/app/src-tauri/target/release/bundle ./dist
+docker rm jhove-builder
+```
+
+**Note:** Docker builds work well for Linux. For macOS and Windows, native builds or CI/CD are recommended.
+
+---
 
 ## Creating a Release
 
-To create a new release that triggers automated builds:
+Releases are automated via GitHub Actions:
 
-1. Update the version in `src-tauri/Cargo.toml`
-2. Update `CHANGELOG.md` with release notes
-3. Commit your changes:
+1. **Update versions** in:
+   - `src-tauri/Cargo.toml` → `version = "0.1.1"`
+   - `package.json` → `"version": "0.1.1"`
+   - `src/components/AboutSection.tsx` → `<strong>Version:</strong> 0.1.1`
+
+2. **Update** `CHANGELOG.md` with release notes
+
+3. **Commit and tag**:
    ```bash
-   git commit -am "Release v1.0.0"
-   ```
-4. Create and push a tag:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+   git commit -am "Release v0.1.1"
+   git tag v0.1.1
+   git push origin v0.1.1
    ```
 
-GitHub Actions will automatically build the application for macOS (Intel & Apple Silicon), Windows, and Linux, then create a GitHub release with all the binaries.
+4. **Watch GitHub Actions** build for macOS (Intel + ARM), Windows, and Linux, then automatically publish a release with all binaries 
+
+---
+
+## Available Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start Next.js dev server (frontend only) |
+| `npm run build` | Build Next.js static export to `out/` |
+| `npm run lint` | Run ESLint on the codebase |
+| `npm run tauri` | Run Tauri CLI directly |
+| `npm run tauri:dev` | Start Tauri dev mode with hot-reload |
+| `npm run tauri:build` | Build production app for your platform |
+
+---
+
+## License
+
+This project is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+
+---
 
 ## Acknowledgments
 
-- [JHOVE](https://jhove.openpreservation.org/) for providing the API used in this project.
+- **[JHOVE](https://jhove.openpreservation.org/)** – The powerful validation engine that makes this all possible
+- **[Open Preservation Foundation](https://openpreservation.org/)** – For maintaining and advancing JHOVE
+- **[Tauri](https://tauri.app/)** – For enabling lightweight, secure desktop apps with web technologies
+- **[Next.js](https://nextjs.org/)** & **[React](https://react.dev/)** – For the modern frontend experience
+
+---
+
+## Issues & Support
+
+Found a bug or have a question?
+- 🐛 [Open an issue](https://github.com/darrendignam/jhove-next/issues)
+- 💬 Check existing issues for known problems
+- 📖 Review the [JHOVE documentation](https://jhove.openpreservation.org/documentation/)
+
+---
+
 
 

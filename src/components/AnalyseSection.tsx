@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   FaCheckCircle, 
   FaTimesCircle, 
@@ -63,6 +63,11 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
   });
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+
+  // Sync selectedModule when currentModule changes (e.g., after a rescan)
+  useEffect(() => {
+    setSelectedModule(currentModule);
+  }, [currentModule]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -469,14 +474,20 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                             )}
                           </div>
                           {wikiLink && (
-                            <button
-                              onClick={() => openExternalLink(wikiLink)}
+                            <a
+                              href={wikiLink}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openExternalLink(wikiLink);
+                              }}
                               className={`flex items-center gap-1 text-xs ${textColor} hover:underline whitespace-nowrap cursor-pointer`}
                               title="View documentation"
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
                               <FaExternalLinkAlt className="text-xs" />
                               Wiki
-                            </button>
+                            </a>
                           )}
                         </div>
                       </div>

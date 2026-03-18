@@ -16,29 +16,35 @@ impl Default for Settings {
 }
 
 /// Get the settings file path based on the platform
-fn get_settings_path() -> PathBuf {
-    let config_dir = dirs::config_dir().expect("Failed to get config directory");
-    config_dir.join("jhove-desktop").join("config.json")
+fn get_settings_path() -> Result<PathBuf, String> {
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| "Failed to get config directory".to_string())?;
+    Ok(config_dir.join("jhove-desktop").join("config.json"))
 }
 
 /// Load settings from disk
 pub fn load_settings() -> Settings {
-    let settings_path = get_settings_path();
-    
-    if settings_path.exists() {
-        if let Ok(contents) = fs::read_to_string(&settings_path) {
-            if let Ok(settings) = serde_json::from_str(&contents) {
-                return settings;
+    match get_settings_path() {
+        Ok(settings_path) => {
+            if settings_path.exists() {
+                if let Ok(contents) = fs::read_to_string(&settings_path) {
+                    if let Ok(settings) = serde_json::from_str(&contents) {
+                        return settings;
+                    }
+                }
             }
+            Settings::default()
+        }
+        Err(_) => {
+            // If we can't get the config directory, just use defaults
+            Settings::default()
         }
     }
-    
-    Settings::default()
 }
 
 /// Save settings to disk
 pub fn save_settings(settings: &Settings) -> Result<(), String> {
-    let settings_path = get_settings_path();
+    let settings_path = get_settings_path()?;
     
     // Create directory if it doesn't exist
     if let Some(parent) = settings_path.parent() {
