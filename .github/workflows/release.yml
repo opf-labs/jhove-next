@@ -1,0 +1,96 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on version tags like v1.0.0, v2.1.3, etc.
+
+jobs:
+  release:
+    permissions:
+      contents: write # Required for creating releases
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin' # Apple Silicon
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin' # Intel Mac
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Uncomment these if you want to enable auto-updates with signed releases
+          # See: https://v2.tauri.app/plugin/updater/
+          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }} # Use the tag name as release name
+          releaseName: 'JHOVE Desktop ${{ github.ref_name }}'
+          releaseBody: |
+            JHOVE Desktop application for file validation and characterization.
+            
+            See the CHANGELOG for details on what's included in this release.
+            
+            ## Installation
+            
+            ### macOS
+            - Download the `.dmg` file for your architecture (Intel or Apple Silicon)
+            - Open the DMG and drag JHOVE to Applications
+            
+            ### Windows
+            - Download the `.msi` installer
+            - Run the installer and follow the prompts
+            
+            ### Linux
+            - Download the `.AppImage` or `.deb` file
+            - For AppImage: Make executable and run
+            - For deb: Install with `sudo dpkg -i jhove-desktop_*.deb`
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}

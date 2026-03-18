@@ -1,19 +1,39 @@
-import { FaImage, FaFileAlt, FaMusic, FaFileCode, FaArchive, FaCog, FaBook } from "react-icons/fa";
+import { FaImage, FaFileAlt, FaMusic, FaFileCode, FaArchive, FaCog, FaBook, FaBug, FaTerminal } from "react-icons/fa";
 
-export default function AboutSection() {
+interface DebugEntry {
+  timestamp: string;
+  file: string;
+  command: string;
+  output: string;
+  error?: string;
+}
+
+interface AboutSectionProps {
+  debugLog?: DebugEntry[];
+}
+
+export default function AboutSection({ debugLog = [] }: AboutSectionProps) {
+  const openExternalLink = async (url: string) => {
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(url);
+    } catch (error) {
+      console.error('Failed to open external link:', error);
+    }
+  };
   return (
     <div className="p-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">About JHOVE Next.js</h1>
+      <h1 className="text-3xl font-bold mb-6">About JHOVE Desktop</h1>
       
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">What is this application?</h2>
         <p className="mb-4 text-lg leading-relaxed">
-          This is a modern web interface for <strong>JHOVE</strong> (JSTOR/Harvard Object Validation Environment), 
+          This is a <strong>desktop application</strong> for <strong>JHOVE</strong> (JSTOR/Harvard Object Validation Environment), 
           an extensible software framework for format-specific identification, validation, and characterization of digital objects.
         </p>
         <p className="mb-4 text-lg leading-relaxed">
-          Built with <strong>Next.js 15</strong> and <strong>React 19</strong>, this application provides a user-friendly 
-          way to validate and analyze digital files using JHOVE&apos;s powerful validation modules.
+          Built with <strong>Tauri</strong>, <strong>Next.js 15</strong> and <strong>React 19</strong>, this application provides a user-friendly 
+          desktop interface to validate and analyze digital files using JHOVE&apos;s powerful validation modules directly on your computer.
         </p>
       </section>
 
@@ -33,9 +53,10 @@ export default function AboutSection() {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">How does it work?</h2>
         <ol className="list-decimal list-inside space-y-3 text-lg">
-          <li><strong>Select a module</strong> - Choose the appropriate JHOVE module for your file format</li>
-          <li><strong>Upload a file</strong> - Drag and drop or click to select a file from your computer</li>
-          <li><strong>Analyze</strong> - The file is sent to the JHOVE API for validation</li>
+          <li><strong>Configure JHOVE</strong> - Set the path to your JHOVE installation in Settings</li>
+          <li><strong>Select a module</strong> - Choose the appropriate JHOVE module or use auto-detection</li>
+          <li><strong>Upload a file</strong> - Select a file from your computer</li>
+          <li><strong>Analyze</strong> - JHOVE validates the file locally on your machine</li>
           <li><strong>View results</strong> - See detailed validation information including format compliance and any issues</li>
         </ol>
       </section>
@@ -89,24 +110,28 @@ export default function AboutSection() {
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">API Information</h2>
+        <h2 className="text-2xl font-semibold mb-4">JHOVE Information</h2>
         <p className="mb-4 text-lg leading-relaxed">
-          This application uses the JHOVE REST API provided by the Open Preservation Foundation:
+          This desktop application uses your local JHOVE installation to validate files directly on your computer.
         </p>
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-5 rounded-lg shadow-sm">
           <div className="mb-3">
-            <span className="font-semibold text-blue-900">API Base URL:</span>
-            <code className="ml-2 bg-white px-3 py-1 rounded text-sm text-blue-700 border border-blue-200">
-              https://jhove-rs.openpreservation.org
-            </code>
+            <span className="font-semibold text-blue-900">Official Website:</span>
+            <button
+              onClick={() => openExternalLink('https://jhove.openpreservation.org')}
+              className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium flex items-center gap-1 cursor-pointer"
+            >
+              <FaBook className="text-sm" /> jhove.openpreservation.org
+            </button>
           </div>
           <div className="flex items-center">
-            <span className="font-semibold text-blue-900">Documentation:</span>
-            <a href="https://jhove-rs.openpreservation.org/api/swagger" 
-              target="_blank" rel="noopener noreferrer" 
-              className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium flex items-center gap-1">
-              <FaBook className="text-sm" /> Swagger API Docs
-            </a>
+            <span className="font-semibold text-blue-900">Download JHOVE:</span>
+            <button
+              onClick={() => openExternalLink('https://software.openpreservation.org/releases/jhove-latest.jar')}
+              className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium cursor-pointer"
+            >
+              Download Latest Version
+            </button>
           </div>
         </div>
       </section>
@@ -119,8 +144,12 @@ export default function AboutSection() {
           preservation, including JHOVE.
         </p>
         <p className="mb-4 text-lg leading-relaxed">
-          Learn more at: <a href="https://openpreservation.org" target="_blank" rel="noopener noreferrer" 
-            className="text-blue-500 hover:underline">openpreservation.org</a>
+          Learn more at: <button
+            onClick={() => openExternalLink('https://openpreservation.org')}
+            className="text-blue-500 hover:underline cursor-pointer"
+          >
+            openpreservation.org
+          </button>
         </p>
       </section>
 
@@ -130,12 +159,73 @@ export default function AboutSection() {
           <strong>JHOVE:</strong> Released under the GNU Lesser General Public License (LGPL)
         </p>
         <p className="mb-2 text-lg leading-relaxed">
-          <strong>This Application:</strong> Built with Next.js, React, and Tailwind CSS
+          <strong>This Application:</strong> Built with Tauri, Next.js, React, and Tailwind CSS
         </p>
         <p className="mb-2 text-lg leading-relaxed">
-          <strong>Version:</strong> 0.1.0
+          <strong>Version:</strong> 0.1.1
         </p>
       </section>
+
+      {/* Debug Section */}
+      {debugLog && debugLog.length > 0 && (
+        <section className="mt-12 pt-8 border-t-2 border-gray-300">
+          <div className="flex items-center gap-3 mb-6">
+            <FaBug className="text-3xl text-red-600" />
+            <h2 className="text-2xl font-semibold">Debug Log</h2>
+          </div>
+          
+          <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm overflow-auto max-h-96">
+            <div className="flex items-center gap-2 mb-4 text-green-400">
+              <FaTerminal />
+              <span>JHOVE Execution History (Last {Math.min(debugLog.length, 200)} entries)</span>
+            </div>
+            
+            <div className="space-y-6">
+              {debugLog.slice(-200).reverse().map((entry, idx) => (
+                <div key={idx} className="border-l-2 border-blue-500 pl-4 py-2">
+                  <div className="text-gray-400 text-xs mb-1">{entry.timestamp}</div>
+                  
+                  <div className="mb-2">
+                    <span className="text-yellow-400">File:</span>
+                    <span className="text-white ml-2">{entry.file}</span>
+                  </div>
+                  
+                  <div className="mb-2">
+                    <span className="text-green-400">Command:</span>
+                    <div className="bg-gray-800 p-2 rounded mt-1 text-cyan-300 overflow-x-auto">
+                      {entry.command}
+                    </div>
+                  </div>
+                  
+                  {entry.error && (
+                    <div className="mb-2">
+                      <span className="text-red-400">Error:</span>
+                      <div className="bg-red-900/30 border border-red-500 p-2 rounded mt-1 text-red-200">
+                        {entry.error}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <span className="text-blue-400">Output:</span>
+                    <div className="bg-gray-800 p-2 rounded mt-1 max-h-40 overflow-auto">
+                      <pre className="text-gray-300 whitespace-pre-wrap break-words text-xs">
+                        {entry.output.substring(0, 2000)}
+                        {entry.output.length > 2000 && <span className="text-yellow-500"> ... (truncated)</span>}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <p className="text-sm text-gray-600 mt-3">
+            * Debug log shows the last 200 file validations. Each entry displays the JHOVE command executed, 
+            raw output, and any errors encountered.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

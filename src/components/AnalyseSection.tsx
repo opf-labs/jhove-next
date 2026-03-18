@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   FaCheckCircle, 
   FaTimesCircle, 
@@ -14,8 +14,11 @@ import {
   FaEye,
   FaEyeSlash,
   FaCog,
-  FaExternalLinkAlt
+  FaExternalLinkAlt,
+  FaSave,
+  FaCheck
 } from "react-icons/fa";
+import { saveJsonReport } from "../lib/tauri-api";
 
 interface ApiResult {
   mimeType?: string;
@@ -39,6 +42,7 @@ interface FileInfo {
   processedResult?: AdditionalData;
   rawApiOutput?: ApiResult;
   module?: string;
+  filePath?: string;
 }
 
 interface AnalyseSectionProps {
@@ -58,6 +62,12 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
     technical: false
   });
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+
+  // Sync selectedModule when currentModule changes (e.g., after a rescan)
+  useEffect(() => {
+    setSelectedModule(currentModule);
+  }, [currentModule]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -69,18 +79,26 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const downloadReport = () => {
+  const downloadReport = async () => {
     if (!fileInfo) return;
-    const report = JSON.stringify(fileInfo, null, 2);
-    const blob = new Blob([report], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jhove-report-${fileInfo.name}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    
+    setSaveStatus('saving');
+    try {
+      const report = JSON.stringify(fileInfo, null, 2);
+      const defaultFileName = `jhove-report-${fileInfo.name}.json`;
+      const saved = await saveJsonReport(defaultFileName, report);
+      
+      if (saved) {
+        setSaveStatus('success');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      } else {
+        setSaveStatus('idle'); // User cancelled
+      }
+    } catch (error) {
+      console.error('Failed to save report:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
   };
 
   const getWikiLink = (messageId: string, module: string) => {
@@ -91,6 +109,19 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
     // Convert message ID to lowercase anchor format: PDF-HUL-140 -> pdf-hul-140
     const anchor = messageId.toLowerCase();
     return `https://github.com/openpreserve/jhove/wiki/${wikiModule}-Messages#${anchor}`;
+  };
+
+  const openExternalLink = async (url: string) => {
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(url);
+    } catch (error) {
+      console.error('Failed to open external link:', error);
+      // Fallback for web environment
+      if (typeof window !== 'undefined') {
+        window.open(url, '_blank');
+      }
+    }
   };
 
   const formatBytes = (bytes: number) => {
@@ -106,6 +137,24 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
       </div>
     );
   }
+
+  // Deduplicate messages using useMemo for performance
+  const deduplicatedMessages = useMemo(() => {
+    if (!fileInfo.rawApiOutput?.messages) return [];
+    
+    const messageMap = new Map<string, { msg: { id?: string; prefix?: string; message?: string; subMessage?: string }, count: number }>();
+    
+    fileInfo.rawApiOutput.messages.forEach((msg: { id?: string; prefix?: string; message?: string; subMessage?: string }) => {
+      const key = `${msg.id || ''}_${msg.prefix || ''}_${msg.message || ''}_${msg.subMessage || ''}`;
+      if (messageMap.has(key)) {
+        messageMap.get(key)!.count++;
+      } else {
+        messageMap.set(key, { msg, count: 1 });
+      }
+    });
+    
+    return Array.from(messageMap.values());
+  }, [fileInfo.rawApiOutput?.messages]);
 
   const isValid = fileInfo.processedResult?.valid === "Yes";
   const isWellFormed = fileInfo.processedResult?.wellFormed === "Yes";
@@ -130,7 +179,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
               >
                 {availableModules.map((module) => (
                   <option key={module} value={module}>
-                    {module === "AUTO" ? "🔍 Auto-detect" : module === "BYTESTREAM" ? "BYTESTREAM (Generic)" : module}
+                    {module === "AUTO" ? "Auto-detect" : module === "BYTESTREAM" ? "BYTESTREAM (Generic)" : module}
                   </option>
                 ))}
               </select>
@@ -158,9 +207,20 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
           </button>
           <button
             onClick={downloadReport}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
+            disabled={saveStatus === 'saving'}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+              saveStatus === 'success' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : saveStatus === 'error'
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            } ${saveStatus === 'saving' ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <FaDownload /> Download Report
+            {saveStatus === 'saving' && <FaDownload className="animate-pulse" />}
+            {saveStatus === 'success' && <FaCheck />}
+            {saveStatus === 'idle' && <FaSave />}
+            {saveStatus === 'error' && <FaExclamationTriangle />}
+            {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'success' ? 'Saved!' : saveStatus === 'error' ? 'Failed' : 'Save Report'}
           </button>
         </div>
       </div>
@@ -265,11 +325,18 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <div className="text-sm text-gray-500 mb-1">File Name</div>
-                    <div className="font-medium text-gray-800">{fileInfo.name}</div>
+                    <div className="font-medium text-gray-800 break-all">
+                      {(fileInfo.rawApiOutput as any)?.jhove?.repInfo?.[0]?.uri || fileInfo.name}
+                    </div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <div className="text-sm text-gray-500 mb-1">Module Used</div>
-                    <div className="font-medium text-gray-800">{fileInfo.module}</div>
+                    <div className="font-medium text-gray-800">
+                      {fileInfo.module === 'AUTO' && (fileInfo.rawApiOutput as any)?.jhove?.repInfo?.[0]?.reportingModule?.name
+                        ? `AUTO (${(fileInfo.rawApiOutput as any).jhove.repInfo[0].reportingModule.name})`
+                        : fileInfo.module
+                      }
+                    </div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-lg relative">
                     <div className="text-sm text-gray-500 mb-1 flex items-center gap-2">
@@ -343,7 +410,7 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
           </div>
 
           {/* Messages */}
-          {fileInfo.rawApiOutput?.messages && fileInfo.rawApiOutput.messages.length > 0 && (
+          {deduplicatedMessages.length > 0 && (
             <div className="bg-white rounded-lg shadow-md mb-4 overflow-hidden">
               <button
                 onClick={() => toggleSection('messages')}
@@ -352,14 +419,14 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                 <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                   <FaExclamationTriangle className="text-yellow-600" /> Validation Messages
                   <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                    {fileInfo.rawApiOutput.messages.length}
+                    {deduplicatedMessages.length}
                   </span>
                 </h3>
                 {expandedSections.messages ? <FaChevronUp /> : <FaChevronDown />}
               </button>
               {expandedSections.messages && (
                 <div className="p-5 pt-0 border-t space-y-3">
-                  {fileInfo.rawApiOutput.messages.map((msg: { id?: string; prefix?: string; message?: string; subMessage?: string }, index: number) => {
+                  {deduplicatedMessages.map(({ msg, count }, index) => {
                     const messageId = msg.id || '';
                     const prefix = msg.prefix || 'Info';
                     const message = msg.message || '';
@@ -391,6 +458,11 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                                   {messageId}
                                 </span>
                               )}
+                              {count > 1 && (
+                                <span className={`text-xs ${textColor} bg-white px-2 py-1 rounded font-semibold`}>
+                                  ×{count}
+                                </span>
+                              )}
                             </div>
                             <p className={`text-sm ${textColor}`}>
                               {message}
@@ -404,10 +476,14 @@ export default function AnalyseSection({ fileInfo, onRescan, availableModules = 
                           {wikiLink && (
                             <a
                               href={wikiLink}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openExternalLink(wikiLink);
+                              }}
+                              className={`flex items-center gap-1 text-xs ${textColor} hover:underline whitespace-nowrap cursor-pointer`}
+                              title="View documentation"
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={`flex items-center gap-1 text-xs ${textColor} hover:underline whitespace-nowrap`}
-                              title="View documentation"
                             >
                               <FaExternalLinkAlt className="text-xs" />
                               Wiki
