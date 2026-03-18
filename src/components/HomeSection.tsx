@@ -51,6 +51,7 @@ export default function HomeSection({
             <select
               id="module"
               name="module"
+              aria-label="Select validation module"
               className="w-full px-4 py-3 text-lg rounded-lg border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm"
               value={selectedModule}
               onChange={onModuleChange}
